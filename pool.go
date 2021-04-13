@@ -25,15 +25,19 @@ import (
 )
 
 const (
-	Waiting ProcessStatus = iota
+	PWaiting ProcessStatus = iota
 	Running
 	Succeeded
 	Failed
 	Killed
+)
 
-	ReadyWaiting WorkerStatus = iota
+const (
+	WWaiting WorkerStatus = iota
 	Busy
+)
 
+const (
 	Created PoolStatus = iota
 	PRunning
 	Closed
@@ -43,6 +47,25 @@ const (
 
 var (
 	singleton = new(sync.Once)
+
+	processStatus2String = map[ProcessStatus]string{
+		PWaiting:  "Waiting",
+		Running:   "Running",
+		Succeeded: "Succeeded",
+		Failed:    "Failed",
+		Killed:    "Killed",
+	}
+
+	workerStatus2String = map[WorkerStatus]string{
+		WWaiting: "Waiting",
+		Busy:     "Busy",
+	}
+
+	poolStatus2string = map[PoolStatus]string{
+		Created:  "Created",
+		PRunning: "Running",
+		Closed:   "Closed",
+	}
 )
 
 type (
@@ -50,11 +73,10 @@ type (
 	WorkerStatus  int
 	PoolStatus    int
 	WorkerName    string
-	PID string
+	PID           string
 
 	Process interface {
 		Start() error
-		Timeout() time.Duration
 		Name() string
 		PID() PID
 	}
@@ -71,7 +93,7 @@ type (
 		PoolStatus() PoolStatus
 		Error(PID) error
 		WorkerStatus(name WorkerName) WorkerStatus
-		ProcessStatus(pid PID)
+		ProcessStatus(pid PID) ProcessStats
 	}
 
 	ProcessStats struct {
@@ -80,17 +102,20 @@ type (
 		Status     ProcessStatus
 		StartedAt  time.Time
 		FinishedAt time.Time
+		err        error
 	}
 
 	workerPool struct {
 		status       PoolStatus
 		size         int
-		c            chan Process
-		processes    map[PID]*ProcessStats
-		err          map[PID]error
+		queue        chan Process
+		wg           *sync.WaitGroup
+		processes    *processStatusMap
 		workers      []WorkerName
-		workersStats map[WorkerName]WorkerStatus
-		controlPanel map[PID]context.CancelFunc
+		workersStats *workerStatsMap
+		controlPanel *controlPanelMap
+		mutex        *sync.Mutex
+		isClosed     bool
 	}
 )
 
@@ -98,18 +123,19 @@ func NewPool(size int) *workerPool {
 	return &workerPool{
 		status:       Created,
 		size:         size,
-		c:            make(chan Process, size),
-		processes:    make(map[PID]*ProcessStats),
-		err:          make(map[PID]error),
+		queue:        make(chan Process, size),
 		workers:      []WorkerName{},
-		workersStats: make(map[WorkerName]WorkerStatus),
-		controlPanel: make(map[PID]context.CancelFunc),
+		processes:    new(processStatusMap),
+		workersStats: new(workerStatsMap),
+		controlPanel: new(controlPanelMap),
+		mutex:        new(sync.Mutex),
+		wg:           new(sync.WaitGroup),
 	}
 }
 
 func (w *workerPool) Start() {
 
-	if w.status == PRunning || w.status == Closed {
+	if w.status == PRunning {
 		log.Printf("pool is already started once, status: %v", w.status)
 	}
 
@@ -120,75 +146,91 @@ func (w *workerPool) Start() {
 }
 
 func (w *workerPool) run() {
-	wg := new(sync.WaitGroup)
 
 	for i := 0; i < w.size; i++ {
-		wg.Add(1)
+		w.wg.Add(1)
 
 		go func(n int) {
-			defer wg.Done()
+			defer w.wg.Done()
 			wn := WorkerName(fmt.Sprintf(defaultWorkerName, n))
 			w.workers = append(w.workers, wn)
 
-			for p := range w.c {
-				w.workersStats[wn] = Busy
-				w.processes[p.PID()].Status = Running
-				w.processes[p.PID()].StartedAt = time.Now()
-				w.processes[p.PID()].WorkerName = wn
-
-				ctx, cancel := context.WithCancel(context.Background())
-				w.controlPanel[p.PID()] = cancel
-
+			for p := range w.queue {
+				w.workersStats.put(wn, Busy)
+				pStats := w.processes.get(p.PID())
+				pStats.Status = Running
+				pStats.StartedAt = time.Now()
+				pStats.WorkerName = wn
+				w.processes.put(p.PID(), pStats)
 				wgp := new(sync.WaitGroup)
 				wgp.Add(1)
 
 				go func() {
-					defer wgp.Done()
-
+					stats := w.processes.get(p.PID())
+					defer func() {
+						w.processes.put(p.PID(), stats)
+						wgp.Done()
+					}()
+					pContext := w.controlPanel.get(p.PID())
 					select {
-					case <- ctx.Done():
+					case <- pContext.ctx.Done():
 						log.Printf("process with id %s has been killed.\n", p.PID().String())
-						w.processes[p.PID()].Status = Killed
+						stats.Status = Killed
 						return
 					default:
 						if err := p.Start(); err != nil { //nolint:typecheck
-							w.err[p.PID()] = err
-							w.processes[p.PID()].Status = Failed
+							stats.err = err
+							stats.Status = Failed
 						} else {
-							w.processes[p.PID()].Status = Succeeded
+							stats.Status = Succeeded
 						}
-						w.controlPanel[p.PID()]()
+						pContext.cancel()
 					}
 				}()
 
 				wgp.Wait()
-				w.processes[p.PID()].FinishedAt = time.Now()
-				w.workersStats[wn] = ReadyWaiting
+				pStats = w.processes.get(p.PID())
+				pStats.FinishedAt = time.Now()
+				w.processes.put(p.PID(), pStats)
+				w.workersStats.put(wn, WWaiting)
 			}
 		}(i)
 	}
-
-	wg.Wait()
 }
 
 func (w *workerPool) Register(args ...Process) {
 	for _, p := range args {
-
-		w.processes[p.PID()] = &ProcessStats{
+		ctx, cancel := context.WithCancel(context.Background())
+		w.controlPanel.put(p.PID(), &processContext{
+			ctx: ctx,
+			cancel: cancel,
+		})
+		w.processes.put(p.PID(), ProcessStats{
 			process: p,
-			Status:  Waiting,
-		}
+			Status:  PWaiting,
+		})
 	}
 	go func(args ...Process) {
-		for pid := range w.processes {
-			w.c <- w.processes[pid].process
+		for i := range args {
+			w.mutex.Lock()
+			if w.isClosed {
+				break
+			}
+			w.queue <- args[i]
+			w.mutex.Unlock()
 		}
 	}(args...)
 }
 
 func (w *workerPool) Close() {
-	close(w.c)
+	w.mutex.Lock()
+	w.isClosed = true
+	close(w.queue)
+	w.mutex.Unlock()
+
+	w.wg.Wait()
 	w.status = Closed
+	singleton = new(sync.Once)
 }
 
 func (w *workerPool) WorkerList() []WorkerName {
@@ -196,7 +238,7 @@ func (w *workerPool) WorkerList() []WorkerName {
 }
 
 func (w *workerPool) Kill(pid PID) {
-	w.controlPanel[pid]()
+	w.controlPanel.get(pid).cancel()
 }
 
 func (w *workerPool) Status() PoolStatus {
@@ -212,13 +254,25 @@ func (w *workerPool) PoolStatus() PoolStatus {
 }
 
 func (w *workerPool) Error(pid PID) error {
-	return w.err[pid]
+	return w.processes.get(pid).err
 }
 
 func (w *workerPool) WorkerStatus(name WorkerName) WorkerStatus {
-	return w.workersStats[name]
+	return w.workersStats.get(name)
 }
 
 func (w *workerPool) ProcessStatus(pid PID) ProcessStats {
-	return *w.processes[pid]
+	return w.processes.get(pid)
+}
+
+func (p ProcessStatus) String() string {
+	return processStatus2String[p]
+}
+
+func (w WorkerStatus) String() string {
+	return workerStatus2String[w]
+}
+
+func (p PoolStatus) String() string {
+	return poolStatus2string[p]
 }
