@@ -147,3 +147,5 @@ func monitor(m Monitor) {
 	writer.Reset()
 	fmt.Println("Download finished!")
 }
+
+
