@@ -91,20 +91,6 @@ func TestNewPoolMultiPublisher(t *testing.T) {
 	a.Equal(Closed, pool.status)
 }
 
-// Use register without input args
-func TestNewPoolWithNoRegistry(t *testing.T) {
-	a := assert.New(t)
-	pool := NewPool(2)
-	a.Equal(Created, pool.status)
-	pool.Start()
-	a.Equal(PRunning, pool.status)
-	pool.Register()
-
-	time.Sleep(2 * time.Second)
-	pool.Close()
-	a.Equal(Closed, pool.status)
-}
-
 // Kill a process before it starts
 func TestNewPoolKillProcess(t *testing.T) {
 	a := assert.New(t)
