@@ -115,6 +115,7 @@ type (
 		workersStats *workerStatsMap
 		controlPanel *controlPanelMap
 		mutex        *sync.Mutex
+		wnMutex      *sync.Mutex
 		isClosed     bool
 	}
 )
@@ -129,6 +130,7 @@ func NewPool(size int) *workerPool {
 		workersStats: new(workerStatsMap),
 		controlPanel: new(controlPanelMap),
 		mutex:        new(sync.Mutex),
+		wnMutex:      new(sync.Mutex),
 		wg:           new(sync.WaitGroup),
 	}
 }
@@ -152,8 +154,10 @@ func (w *workerPool) run() {
 
 		go func(n int) {
 			defer w.wg.Done()
+			w.wnMutex.Lock()
 			wn := WorkerName(fmt.Sprintf(defaultWorkerName, n))
 			w.workers = append(w.workers, wn)
+			w.wnMutex.Unlock()
 
 			for p := range w.queue {
 				w.workersStats.put(wn, Busy)
@@ -173,7 +177,7 @@ func (w *workerPool) run() {
 					}()
 					pContext := w.controlPanel.get(p.PID())
 					select {
-					case <- pContext.ctx.Done():
+					case <-pContext.ctx.Done():
 						log.Printf("process with id %s has been killed.\n", p.PID().String())
 						stats.Status = Killed
 						return
@@ -202,7 +206,7 @@ func (w *workerPool) Register(args ...Process) {
 	for _, p := range args {
 		ctx, cancel := context.WithCancel(context.Background())
 		w.controlPanel.put(p.PID(), &processContext{
-			ctx: ctx,
+			ctx:    ctx,
 			cancel: cancel,
 		})
 		w.processes.put(p.PID(), ProcessStats{

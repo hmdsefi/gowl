@@ -81,26 +81,12 @@ func TestNewPoolMultiPublisher(t *testing.T) {
 	a.Equal(Created, pool.status)
 	pool.Start()
 	a.Equal(PRunning, pool.status)
-	pool.Register(createProcess(10, 1, 3*time.Second)...)
-	pool.Register(createProcess(10, 2, 2*time.Second)...)
-	pool.Register(createProcess(10, 3, 1*time.Second)...)
+	pool.Register(createProcess(10, 1, 300*time.Millisecond)...)
+	pool.Register(createProcess(10, 2, 200*time.Millisecond)...)
+	pool.Register(createProcess(10, 3, 100*time.Millisecond)...)
 	pool.Register(createProcess(10, 4, 500*time.Millisecond)...)
 
-	time.Sleep(30 * time.Second)
-	pool.Close()
-	a.Equal(Closed, pool.status)
-}
-
-// Use register without input args
-func TestNewPoolWithNoRegistry(t *testing.T) {
-	a := assert.New(t)
-	pool := NewPool(2)
-	a.Equal(Created, pool.status)
-	pool.Start()
-	a.Equal(PRunning, pool.status)
-	pool.Register()
-
-	time.Sleep(2 * time.Second)
+	time.Sleep(10 * time.Second)
 	pool.Close()
 	a.Equal(Closed, pool.status)
 }
@@ -147,3 +133,5 @@ func monitor(m Monitor) {
 	writer.Reset()
 	fmt.Println("Download finished!")
 }
+
+
