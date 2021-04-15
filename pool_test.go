@@ -81,8 +81,10 @@ func TestNewPoolMultiPublisher(t *testing.T) {
 	a.Equal(Created, pool.status)
 	pool.Start()
 	a.Equal(PRunning, pool.status)
-	pool.Register(createProcess(10, 1, 1*time.Second)...)
-	pool.Register(createProcess(10, 2, 500*time.Millisecond)...)
+	pool.Register(createProcess(10, 1, 300*time.Millisecond)...)
+	pool.Register(createProcess(10, 2, 200*time.Millisecond)...)
+	pool.Register(createProcess(10, 3, 100*time.Millisecond)...)
+	pool.Register(createProcess(10, 4, 500*time.Millisecond)...)
 
 	time.Sleep(10 * time.Second)
 	pool.Close()
