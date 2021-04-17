@@ -161,6 +161,9 @@ func TestWorkerPool_WorkerList(t *testing.T) {
 	a.Equal(pool.Running, wp.Monitor().PoolStatus())
 	wp.Register(createProcess(5, 1, 700*time.Millisecond, processFunc)...)
 	time.Sleep(1 * time.Second)
+	err = wp.Start()
+	a.Error(err)
+	a.Equal("unable to start the pool, status: "+pool.Running.String(), err.Error())
 	wList := wp.Monitor().WorkerList()
 	for _, wn := range wList {
 		fmt.Println(wp.Monitor().WorkerStatus(wn))
