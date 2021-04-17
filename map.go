@@ -23,18 +23,32 @@ import (
 )
 
 type (
+	// controlPanelMap is a thread safe map for controlling processes. It also
+	// provides type safety.
+	// 		Key: PID
+	// 		Value: processContext
 	controlPanelMap struct {
 		internal sync.Map
 	}
 
+	// workerStatsMap is a thread safe map for controlling processes. It also
+	// provides type safety.
+	// 		Key: WorkerName
+	// 		Value: worker.Status
 	workerStatsMap struct {
 		internal sync.Map
 	}
 
+	// processStatusMap is a thread safe map for controlling processes. It also
+	// provides type safety.
+	// 		Key: PID
+	// 		Value: ProcessStats
 	processStatusMap struct {
 		internal sync.Map
 	}
 
+	// processContext represents a cancellation context by holding a context and
+	// a cancel function.
 	processContext struct {
 		ctx    context.Context
 		cancel context.CancelFunc

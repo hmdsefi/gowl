@@ -65,25 +65,25 @@ func TestNewPool(t *testing.T) {
 	a := assert.New(t)
 	wp := NewPool(2)
 
-	a.Equal(pool.Created, wp.PoolStatus())
+	a.Equal(pool.Created, wp.Monitor().PoolStatus())
 	wp.Register(createProcess(10, 1, 300*time.Millisecond, processFunc)...)
 	err := wp.Start()
 	a.NoError(err)
-	a.Equal(pool.Running, wp.PoolStatus())
+	a.Equal(pool.Running, wp.Monitor().PoolStatus())
 	time.Sleep(500 * time.Millisecond)
 	err = wp.Close()
 	a.NoError(err)
-	a.Equal(pool.Closed, wp.PoolStatus())
+	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
 }
 
 // Four different goroutine will publish processes to the queue
 func TestNewPoolMultiPublisher(t *testing.T) {
 	a := assert.New(t)
 	wp := NewPool(2)
-	a.Equal(pool.Created, wp.PoolStatus())
+	a.Equal(pool.Created, wp.Monitor().PoolStatus())
 	err := wp.Start()
 	a.NoError(err)
-	a.Equal(pool.Running, wp.PoolStatus())
+	a.Equal(pool.Running, wp.Monitor().PoolStatus())
 	wp.Register(createProcess(10, 1, 300*time.Millisecond, processFunc)...)
 	wp.Register(createProcess(10, 2, 200*time.Millisecond, processFunc)...)
 	wp.Register(createProcess(10, 3, 100*time.Millisecond, processFunc)...)
@@ -92,82 +92,82 @@ func TestNewPoolMultiPublisher(t *testing.T) {
 	time.Sleep(10 * time.Second)
 	err = wp.Close()
 	a.NoError(err)
-	a.Equal(pool.Closed, wp.PoolStatus())
+	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
 }
 
 // Kill a processFunc before it starts
 func TestWorkerPool_Kill(t *testing.T) {
 	a := assert.New(t)
 	wp := NewPool(5)
-	a.Equal(pool.Created, wp.PoolStatus())
+	a.Equal(pool.Created, wp.Monitor().PoolStatus())
 	err := wp.Start()
 	a.NoError(err)
-	a.Equal(pool.Running, wp.PoolStatus())
+	a.Equal(pool.Running, wp.Monitor().PoolStatus())
 	wp.Register(createProcess(10, 1, 3*time.Second, processFunc)...)
 	wp.Kill("p-18")
 	time.Sleep(7 * time.Second)
 	err = wp.Close()
 	a.NoError(err)
-	a.Equal(pool.Closed, wp.PoolStatus())
-	a.Equal(process.Killed, wp.ProcessStatus("p-18").Status)
+	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
+	a.Equal(process.Killed, wp.Monitor().ProcessStatus("p-18").Status)
 }
 
 // Process returns error and monitor should cache it
 func TestMonitor_Error(t *testing.T) {
 	a := assert.New(t)
 	wp := NewPool(5)
-	a.Equal(pool.Created, wp.PoolStatus())
+	a.Equal(pool.Created, wp.Monitor().PoolStatus())
 	err := wp.Start()
 	a.NoError(err)
-	a.Equal(pool.Running, wp.PoolStatus())
+	a.Equal(pool.Running, wp.Monitor().PoolStatus())
 	wp.Register(createProcess(1, 1, 1*time.Second, processFuncWithError)...)
 	time.Sleep(2 * time.Second)
 	err = wp.Close()
 	a.NoError(err)
-	a.Equal(pool.Closed, wp.PoolStatus())
-	a.Equal(process.Failed, wp.ProcessStatus("p-11").Status)
-	a.Error(wp.Error("p-11"))
-	a.Equal("unable to start processFunc with id: p-11", wp.Error("p-11").Error())
+	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
+	a.Equal(process.Failed, wp.Monitor().ProcessStatus("p-11").Status)
+	a.Error(wp.Monitor().Error("p-11"))
+	a.Equal("unable to start processFunc with id: p-11", wp.Monitor().Error("p-11").Error())
 }
 
 // Close a created pool should return error
 func TestWorkerPool_Close(t *testing.T) {
 	a := assert.New(t)
 	wp := NewPool(3)
-	a.Equal(pool.Created, wp.PoolStatus())
+	a.Equal(pool.Created, wp.Monitor().PoolStatus())
 	err := wp.Close()
 	a.Error(err)
-	a.Equal("pool is not running, status "+wp.status.String(), err.Error())
+	a.Equal("pool is not running, status "+wp.Monitor().PoolStatus().String(), err.Error())
 	err = wp.Start()
 	a.NoError(err)
-	a.Equal(pool.Running, wp.PoolStatus())
+	a.Equal(pool.Running, wp.Monitor().PoolStatus())
 	wp.Register(createProcess(1, 1, 100*time.Millisecond, processFunc)...)
 	time.Sleep(1 * time.Second)
 	err = wp.Close()
 	a.NoError(err)
-	a.Equal(pool.Closed, wp.PoolStatus())
+	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
 }
 
 // Get worker list and check their status
 func TestWorkerPool_WorkerList(t *testing.T) {
 	a := assert.New(t)
 	wp := NewPool(3)
-	a.Equal(pool.Created, wp.PoolStatus())
+	a.Equal(pool.Created, wp.Monitor().PoolStatus())
 	err := wp.Close()
 	a.Error(err)
-	a.Equal("pool is not running, status "+wp.status.String(), err.Error())
+	a.Equal("pool is not running, status "+wp.Monitor().PoolStatus().String(), err.Error())
 	err = wp.Start()
 	a.NoError(err)
-	a.Equal(pool.Running, wp.PoolStatus())
+	a.Equal(pool.Running, wp.Monitor().PoolStatus())
 	wp.Register(createProcess(5, 1, 700*time.Millisecond, processFunc)...)
 	time.Sleep(1 * time.Second)
-	wList := wp.WorkerList()
+	wList := wp.Monitor().WorkerList()
 	for _, wn := range wList {
-		fmt.Println(wp.WorkerStatus(wn))
+		fmt.Println(wp.Monitor().WorkerStatus(wn))
 	}
 	err = wp.Close()
 	a.NoError(err)
-	a.Equal(pool.Closed, wp.PoolStatus())
+	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
 }
 
 func createProcess(n int, g int, d time.Duration, f pTestFunc) []Process {

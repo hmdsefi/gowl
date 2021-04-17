@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	poolStatus2string = map[Status]string{
+	status2string = map[Status]string{
 		Created: "Created",
 		Running: "Running",
 		Closed:  "Closed",
@@ -31,9 +31,11 @@ var (
 )
 
 type (
+	// Status represents pool current state.
 	Status int
 )
 
+// String returns string value of pool state.
 func (p Status) String() string {
-	return poolStatus2string[p]
+	return status2string[p]
 }

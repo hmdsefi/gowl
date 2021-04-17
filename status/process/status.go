@@ -35,9 +35,11 @@ var (
 )
 
 type (
+	// Status represents process current state.
 	Status int
 )
 
+// String returns string value of process state.
 func (s Status) String() string {
 	return status2String[s]
 }

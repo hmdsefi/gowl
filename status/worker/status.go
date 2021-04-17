@@ -29,9 +29,11 @@ var (
 )
 
 type (
+	// Status represents worker current state.
 	Status int
 )
 
+// String returns string value of worker state.
 func (s Status) String() string {
 	return status2String[s]
 }
