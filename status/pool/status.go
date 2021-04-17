@@ -17,8 +17,11 @@
 package pool
 
 const (
+	// Created is the pool state after pool has been created and before it starts.
 	Created Status = iota
+	// Running is a pool state when the pool started by Start() function.
 	Running
+	// Closed is a pool state when the pool stopped by Close() function.
 	Closed
 )
 

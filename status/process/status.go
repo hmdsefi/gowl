@@ -17,10 +17,15 @@
 package process
 
 const (
+	// Waiting is a process state when the process is waiting to consume by a worker.
 	Waiting Status = iota
+	// Running is a process state when it consumed by a worker.
 	Running
+	// Succeeded is a process state when it has been ended without error.
 	Succeeded
+	// Failed is a process state when it has been ended with error.
 	Failed
+	// Killed is a process state when the process cancelled before running.
 	Killed
 )
 

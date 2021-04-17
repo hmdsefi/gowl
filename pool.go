@@ -38,7 +38,7 @@ type (
 	WorkerName string
 
 	// PID is a custom type of string that represent process id.
-	PID        string
+	PID string
 
 	// Process is an interface that represents a process
 	Process interface {
@@ -85,18 +85,18 @@ type (
 		WorkerName WorkerName
 
 		// Process is process that this stats belongs to.
-		Process    Process
+		Process Process
 
 		// Status represents the current state of the process.
-		Status     process.Status
+		Status process.Status
 
 		// StartedAt represents the start date time of the process.
-		StartedAt  time.Time
+		StartedAt time.Time
 
 		// FinishedAt represents the end date time of the process.
 		FinishedAt time.Time
 
-		err        error
+		err error
 	}
 
 	// workerPool is an implementation of Pool and Monitor interfaces.

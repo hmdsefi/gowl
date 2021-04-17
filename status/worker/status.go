@@ -17,7 +17,9 @@
 package worker
 
 const (
+	// Waiting is a worker state when the worker is waiting to consume a process.
 	Waiting Status = iota
+	// Busy is a worker state when the worker consumed a process and running it.
 	Busy
 )
 
