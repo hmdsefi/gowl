@@ -6,4 +6,7 @@ cli:
   server: https://app.fossa.com
   fetcher: custom
   project: https://github.com/hamed-yousefi/gowl.git
-analyze: {}
+analyze:
+  modules:
+    - name: github.com/hamed-yousefi/gowl
+      type: go

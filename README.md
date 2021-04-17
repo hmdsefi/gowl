@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.com/hamed-yousefi/gowl.svg?branch=master)](https://travis-ci.com/hamed-yousefi/gowl)
 [![codecov](https://codecov.io/gh/hamed-yousefi/gowl/branch/master/graph/badge.svg?token=1TYYX8IBR0)](https://codecov.io/gh/hamed-yousefi/gowl)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hamed-yousefi/gowl)](https://goreportcard.com/report/github.com/hamed-yousefi/gowl)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fhamed-yousefi%2Fgowl.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fhamed-yousefi%2Fgowl?ref=badge_shield)
+[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B24403%2Fgithub.com%2Fhamed-yousefi%2Fgowl.svg?type=shield)](https://app.fossa.com/projects/custom%2B24403%2Fgithub.com%2Fhamed-yousefi%2Fgowl?ref=badge_shield)
 <div  align="center"><img src="https://github.com/hamed-yousefi/gowl/blob/master/docs/images/process-pool.png" width="450" ></div>
 Gowl is a process management and process monitoring tool at once.
 An infinite worker pool gives you the ability to control the pool and processes
@@ -10,14 +10,14 @@ and monitor their status.
 
 ## Table of Contents
 
-* [Install](#nstall)
+* [Install](#Install)
 * [How to use](#How-to-use)
   * [Pool](#Pooling)
     * Start
     * Register process
     * Kill process
     * Close
-  * [Monitor](#Monitoring)    
+  * [Monitor](#Monitor)
 * [License](#License)
 
 ## Installing
@@ -82,8 +82,50 @@ As you can see, in this example, `Document` implements the Process interface.
 So now we can register it into the pool.
 
 ### Pool
-Creating Gowl pool is very easy. You just need to use `NewPool(size int)` function
-and pass the pool size to this function. Pool size indicates the
+Creating Gowl pool is very easy. You must use the `NewPool(size int)`
+function and pass the pool size to this function. Pool size indicates
+the worker numbers in and the underlying queue size that workers consume
+process from it. Look at the following example:
+
+```go
+pool := gowl.NewPool(4)
+```
+In this example, Gowl will create a new instance of a Pool object with four workers
+and an underlying queue with the size of four.
+
+#### Start
+
+To start the Gowl, you must call the `Start()` method of the pool
+object. It will begin to create the workers, and workers start listening
+to the queue to consume process.
+
+#### Register process
+
+To register processes to the pool, you must use the `Register(args ...process)`
+method. Pass the processes to the register method, and it will create a
+new publisher to publish the process list to the queue. You can call multiple
+times when Gowl pool is running.
+
+#### Kill process
+
+One of the most remarkable features of Gowl is the ability to control the
+process after registered it into the pool. You can kill a process before
+any worker runs it. Killing a process is simple, and you need the process
+id to do it.
+
+```go
+pool.Kill(PID("p-909"))
+```
+
+#### Close
+
+Gowl is an infinite worker pool. However, you should have control over
+the pool and decide when you want to start it, register a new process on
+it, kill a process, and `close` the pool and terminate the workers. Gowl
+gives you this option to close the pool by the `Close()` method of the
+Pool object.
+
+## Monitor
 
 ## License
 
