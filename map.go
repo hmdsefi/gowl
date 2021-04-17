@@ -18,15 +18,12 @@ package gowl
 
 import (
 	"context"
+	"github.com/hamed-yousefi/gowl/status/worker"
 	"sync"
 )
 
 type (
 	controlPanelMap struct {
-		internal sync.Map
-	}
-
-	errorMap struct {
 		internal sync.Map
 	}
 
@@ -54,13 +51,13 @@ func (c *controlPanelMap) get(pid PID) *processContext {
 	return cancel
 }
 
-func (c *workerStatsMap) put(name WorkerName, status WorkerStatus) {
+func (c *workerStatsMap) put(name WorkerName, status worker.Status) {
 	c.internal.Store(name, status)
 }
 
-func (c *workerStatsMap) get(name WorkerName) WorkerStatus {
+func (c *workerStatsMap) get(name WorkerName) worker.Status {
 	in, _ := c.internal.Load(name)
-	status, _ := in.(WorkerStatus)
+	status, _ := in.(worker.Status)
 	return status
 }
 

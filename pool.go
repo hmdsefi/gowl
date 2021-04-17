@@ -18,62 +18,23 @@ package gowl
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/hamed-yousefi/gowl/status/pool"
+	"github.com/hamed-yousefi/gowl/status/process"
+	"github.com/hamed-yousefi/gowl/status/worker"
 	"log"
 	"sync"
 	"time"
 )
 
 const (
-	PWaiting ProcessStatus = iota
-	Running
-	Succeeded
-	Failed
-	Killed
-)
-
-const (
-	WWaiting WorkerStatus = iota
-	Busy
-)
-
-const (
-	Created PoolStatus = iota
-	PRunning
-	Closed
-
 	defaultWorkerName = "W%d"
 )
 
-var (
-	singleton = new(sync.Once)
-
-	processStatus2String = map[ProcessStatus]string{
-		PWaiting:  "Waiting",
-		Running:   "Running",
-		Succeeded: "Succeeded",
-		Failed:    "Failed",
-		Killed:    "Killed",
-	}
-
-	workerStatus2String = map[WorkerStatus]string{
-		WWaiting: "Waiting",
-		Busy:     "Busy",
-	}
-
-	poolStatus2string = map[PoolStatus]string{
-		Created:  "Created",
-		PRunning: "Running",
-		Closed:   "Closed",
-	}
-)
-
 type (
-	ProcessStatus int
-	WorkerStatus  int
-	PoolStatus    int
-	WorkerName    string
-	PID           string
+	WorkerName string
+	PID        string
 
 	Process interface {
 		Start() error
@@ -82,31 +43,31 @@ type (
 	}
 
 	Pool interface {
-		Start()
+		Start() error
 		Register(p ...Process)
-		Close()
+		Close() error
 		Kill(pid PID)
 		WorkerList() []WorkerName
 	}
 
 	Monitor interface {
-		PoolStatus() PoolStatus
+		PoolStatus() pool.Status
 		Error(PID) error
-		WorkerStatus(name WorkerName) WorkerStatus
+		WorkerStatus(name WorkerName) worker.Status
 		ProcessStatus(pid PID) ProcessStats
 	}
 
 	ProcessStats struct {
 		WorkerName WorkerName
 		process    Process
-		Status     ProcessStatus
+		Status     process.Status
 		StartedAt  time.Time
 		FinishedAt time.Time
 		err        error
 	}
 
 	workerPool struct {
-		status       PoolStatus
+		status       pool.Status
 		size         int
 		queue        chan Process
 		wg           *sync.WaitGroup
@@ -115,14 +76,13 @@ type (
 		workersStats *workerStatsMap
 		controlPanel *controlPanelMap
 		mutex        *sync.Mutex
-		wnMutex      *sync.Mutex
 		isClosed     bool
 	}
 )
 
 func NewPool(size int) *workerPool {
 	return &workerPool{
-		status:       Created,
+		status:       pool.Created,
 		size:         size,
 		queue:        make(chan Process, size),
 		workers:      []WorkerName{},
@@ -130,39 +90,35 @@ func NewPool(size int) *workerPool {
 		workersStats: new(workerStatsMap),
 		controlPanel: new(controlPanelMap),
 		mutex:        new(sync.Mutex),
-		wnMutex:      new(sync.Mutex),
 		wg:           new(sync.WaitGroup),
 	}
 }
 
-func (w *workerPool) Start() {
+func (w *workerPool) Start() error {
 
-	if w.status == PRunning {
-		log.Printf("pool is already started once, status: %v", w.status)
+	if w.status == pool.Running {
+		return errors.New("unable to start the pool, status: " + w.status.String())
 	}
 
-	singleton.Do(func() {
-		w.status = PRunning
-		go w.run()
-	})
+	w.status = pool.Running
+	w.run()
+
+	return nil
 }
 
 func (w *workerPool) run() {
 
 	for i := 0; i < w.size; i++ {
 		w.wg.Add(1)
-
-		go func(n int) {
+		wName := WorkerName(fmt.Sprintf(defaultWorkerName, i))
+		w.workers = append(w.workers, wName)
+		go func(n int, wn WorkerName) {
 			defer w.wg.Done()
-			w.wnMutex.Lock()
-			wn := WorkerName(fmt.Sprintf(defaultWorkerName, n))
-			w.workers = append(w.workers, wn)
-			w.wnMutex.Unlock()
 
 			for p := range w.queue {
-				w.workersStats.put(wn, Busy)
+				w.workersStats.put(wn, worker.Busy)
 				pStats := w.processes.get(p.PID())
-				pStats.Status = Running
+				pStats.Status = process.Running
 				pStats.StartedAt = time.Now()
 				pStats.WorkerName = wn
 				w.processes.put(p.PID(), pStats)
@@ -178,15 +134,15 @@ func (w *workerPool) run() {
 					pContext := w.controlPanel.get(p.PID())
 					select {
 					case <-pContext.ctx.Done():
-						log.Printf("process with id %s has been killed.\n", p.PID().String())
-						stats.Status = Killed
+						log.Printf("processFunc with id %s has been killed.\n", p.PID().String())
+						stats.Status = process.Killed
 						return
 					default:
 						if err := p.Start(); err != nil { //nolint:typecheck
 							stats.err = err
-							stats.Status = Failed
+							stats.Status = process.Failed
 						} else {
-							stats.Status = Succeeded
+							stats.Status = process.Succeeded
 						}
 						pContext.cancel()
 					}
@@ -196,9 +152,9 @@ func (w *workerPool) run() {
 				pStats = w.processes.get(p.PID())
 				pStats.FinishedAt = time.Now()
 				w.processes.put(p.PID(), pStats)
-				w.workersStats.put(wn, WWaiting)
+				w.workersStats.put(wn, worker.Waiting)
 			}
-		}(i)
+		}(i, wName)
 	}
 }
 
@@ -211,7 +167,7 @@ func (w *workerPool) Register(args ...Process) {
 		})
 		w.processes.put(p.PID(), ProcessStats{
 			process: p,
-			Status:  PWaiting,
+			Status:  process.Waiting,
 		})
 	}
 	go func(args ...Process) {
@@ -226,15 +182,20 @@ func (w *workerPool) Register(args ...Process) {
 	}(args...)
 }
 
-func (w *workerPool) Close() {
+func (w *workerPool) Close() error {
+	if w.status != pool.Running {
+		return errors.New("pool is not running, status " + w.status.String())
+	}
+
 	w.mutex.Lock()
 	w.isClosed = true
 	close(w.queue)
 	w.mutex.Unlock()
 
 	w.wg.Wait()
-	w.status = Closed
-	singleton = new(sync.Once)
+	w.status = pool.Closed
+
+	return nil
 }
 
 func (w *workerPool) WorkerList() []WorkerName {
@@ -245,15 +206,11 @@ func (w *workerPool) Kill(pid PID) {
 	w.controlPanel.get(pid).cancel()
 }
 
-func (w *workerPool) Status() PoolStatus {
-	return w.status
-}
-
 func (p PID) String() string {
 	return string(p)
 }
 
-func (w *workerPool) PoolStatus() PoolStatus {
+func (w *workerPool) PoolStatus() pool.Status {
 	return w.status
 }
 
@@ -261,22 +218,10 @@ func (w *workerPool) Error(pid PID) error {
 	return w.processes.get(pid).err
 }
 
-func (w *workerPool) WorkerStatus(name WorkerName) WorkerStatus {
+func (w *workerPool) WorkerStatus(name WorkerName) worker.Status {
 	return w.workersStats.get(name)
 }
 
 func (w *workerPool) ProcessStatus(pid PID) ProcessStats {
 	return w.processes.get(pid)
-}
-
-func (p ProcessStatus) String() string {
-	return processStatus2String[p]
-}
-
-func (w WorkerStatus) String() string {
-	return workerStatus2String[w]
-}
-
-func (p PoolStatus) String() string {
-	return poolStatus2string[p]
 }
