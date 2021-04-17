@@ -37,7 +37,7 @@ type (
 	// WorkerName is a custom type of string that represents worker's name.
 	WorkerName string
 
-	// PID is a custom type of string that represent process id.
+	// PID is a custom type of string that represents process id.
 	PID string
 
 	// Process is an interface that represents a process
