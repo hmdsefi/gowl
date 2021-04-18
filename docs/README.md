@@ -3,6 +3,7 @@
 [![codecov](https://codecov.io/gh/hamed-yousefi/gowl/branch/master/graph/badge.svg?token=1TYYX8IBR0)](https://codecov.io/gh/hamed-yousefi/gowl)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hamed-yousefi/gowl)](https://goreportcard.com/report/github.com/hamed-yousefi/gowl)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B24403%2Fgithub.com%2Fhamed-yousefi%2Fgowl.svg?type=shield)](https://app.fossa.com/projects/custom%2B24403%2Fgithub.com%2Fhamed-yousefi%2Fgowl?ref=badge_shield)
+[![Go Reference](https://pkg.go.dev/badge/github.com/hamed-yousefi/gowl.svg)](https://pkg.go.dev/github.com/hamed-yousefi/gowl)
 <div  align="center"><img src="https://github.com/hamed-yousefi/gowl/blob/master/docs/images/process-pool.png" width="450" ></div>
 Gowl is a process management and process monitoring tool at once.
 An infinite worker pool gives you the ability to control the pool and processes
@@ -13,10 +14,10 @@ and monitor their status.
 * [Install](#Install)
 * [How to use](#How-to-use)
   * [Pool](#Pooling)
-    * Start
-    * Register process
-    * Kill process
-    * Close
+    * [Start](#Start)
+    * [Register process](#Register-process)
+    * [Kill process](#Kill-process)
+    * [Close](#Close)
   * [Monitor](#Monitor)
 * [License](#License)
 
