@@ -22,7 +22,7 @@ and monitor their status.
     * [Monitor](#Monitor)
 * [License](#License)
 
-## Installing
+## Install
 
 Using Gowl is easy. First, use `go get` to install the latest version of the library. This command will install
 the `gowl` along with library and its dependencies:
