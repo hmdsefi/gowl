@@ -37,7 +37,7 @@ type (
 	// WorkerName is a custom type of string that represents worker's name.
 	WorkerName string
 
-	// PID is a custom type of string that represent process id.
+	// PID is a custom type of string that represents process id.
 	PID string
 
 	// Process is an interface that represents a process
@@ -76,7 +76,7 @@ type (
 		// WorkerStatus returns worker status. It accepts worker name as input.
 		WorkerStatus(name WorkerName) worker.Status
 		// ProcessStatus returns process stats. It accepts process id as input.
-		ProcessStatus(pid PID) ProcessStats
+		ProcessStats(pid PID) ProcessStats
 	}
 
 	// ProcessStats represents process statistics.
@@ -289,6 +289,6 @@ func (w *workerPool) WorkerStatus(name WorkerName) worker.Status {
 }
 
 // ProcessStatus returns process stats. It accepts process id as input.
-func (w *workerPool) ProcessStatus(pid PID) ProcessStats {
+func (w *workerPool) ProcessStats(pid PID) ProcessStats {
 	return w.processes.get(pid)
 }

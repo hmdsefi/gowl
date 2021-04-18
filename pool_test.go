@@ -19,11 +19,9 @@ package gowl
 import (
 	"errors"
 	"fmt"
-	"github.com/apoorvam/goterminal"
 	"github.com/hamed-yousefi/gowl/status/pool"
 	"github.com/hamed-yousefi/gowl/status/process"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -109,7 +107,7 @@ func TestWorkerPool_Kill(t *testing.T) {
 	err = wp.Close()
 	a.NoError(err)
 	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
-	a.Equal(process.Killed, wp.Monitor().ProcessStatus("p-18").Status)
+	a.Equal(process.Killed, wp.Monitor().ProcessStats("p-18").Status)
 }
 
 // Process returns error and monitor should cache it
@@ -125,7 +123,7 @@ func TestMonitor_Error(t *testing.T) {
 	err = wp.Close()
 	a.NoError(err)
 	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
-	a.Equal(process.Failed, wp.Monitor().ProcessStatus("p-11").Status)
+	a.Equal(process.Failed, wp.Monitor().ProcessStats("p-11").Status)
 	a.Error(wp.Monitor().Error("p-11"))
 	a.Equal("unable to start processFunc with id: p-11", wp.Monitor().Error("p-11").Error())
 }
@@ -161,6 +159,9 @@ func TestWorkerPool_WorkerList(t *testing.T) {
 	a.Equal(pool.Running, wp.Monitor().PoolStatus())
 	wp.Register(createProcess(5, 1, 700*time.Millisecond, processFunc)...)
 	time.Sleep(1 * time.Second)
+	err = wp.Start()
+	a.Error(err)
+	a.Equal("unable to start the pool, status: "+pool.Running.String(), err.Error())
 	wList := wp.Monitor().WorkerList()
 	for _, wn := range wList {
 		fmt.Println(wp.Monitor().WorkerStatus(wn))
@@ -186,24 +187,4 @@ func processFunc(pid PID, d time.Duration) error {
 
 func processFuncWithError(pid PID, d time.Duration) error {
 	return errors.New("unable to start processFunc with id: " + pid.String())
-}
-
-func monitor(m Monitor) {
-	// get an instance of writer
-	writer := goterminal.New(os.Stdout)
-
-	for i := 0; i < 100; i = i + 10 {
-		// add your text to writer's buffer
-		fmt.Fprintf(writer, "Downloading (%d/100) bytes...\n", i)
-		// write to terminal
-		writer.Print()
-		time.Sleep(time.Millisecond * 200)
-
-		// clear the text written by the previous write, so that it can be re-written.
-		writer.Clear()
-	}
-
-	// reset the writer
-	writer.Reset()
-	fmt.Println("Download finished!")
 }
