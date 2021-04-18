@@ -15,10 +15,10 @@ and monitor their status.
 * [Install](#Install)
 * [How to use](#How-to-use)
     * [Pool](#Pooling)
-        * Start
-        * Register process
-        * Kill process
-        * Close
+      * [Start](#Start)
+      * [Register process](#Register-process)
+      * [Kill process](#Kill-process)
+      * [Close](#Close)
     * [Monitor](#Monitor)
 * [License](#License)
 
