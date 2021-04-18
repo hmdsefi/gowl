@@ -151,7 +151,7 @@ using Monitor API to present the stats in the console in real-time.
 
 ![process-monitoring](https://github.com/hamed-yousefi/gowl/blob/master/docs/images/process-monitoring.gif)
 
-Also, you can show worker status in the console:
+Also, you can use the Monitor API to show worker status in the console:
 
 ![worker-monitoring](https://github.com/hamed-yousefi/gowl/blob/master/docs/images/worker-monitoring.gif)
 
