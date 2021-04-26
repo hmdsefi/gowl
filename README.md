@@ -60,26 +60,26 @@ Let's take a look at an example:
 
 ```go
 Document struct {
-content string
-hash string
+   content string
+   hash string
 }
 
 func (d *Document) Start() error {
-hasher := sha1.New()
-hasher.Write(bv)
-h.hash = base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+   hasher := sha1.New()
+   hasher.Write(bv)
+   h.hash = base64.URLEncoding.EncodeToString(hasher.Sum(nil))
 }
 
 func (d *Document) Name() string {
-return "hashing-process"
+   return "hashing-process"
 }
 
 func (d *Document) PID() PID {
-return "p-1"
+   return "p-1"
 }
 
 func (d *Document) Hash() string {
-return h.hash
+   return h.hash
 }
 ```
 
@@ -133,11 +133,11 @@ You can get the Monitor instance by calling the `Monitor()` method of the Pool. 
 
 ```go
 Monitor interface {
-PoolStatus() pool.Status
-Error(PID) error
-WorkerList() []WorkerName
-WorkerStatus(name WorkerName) worker.Status
-ProcessStats(pid PID) ProcessStats
+   PoolStatus() pool.Status
+   Error(PID) error
+   WorkerList() []WorkerName
+   WorkerStatus(name WorkerName) worker.Status
+   ProcessStats(pid PID) ProcessStats
 }
 ```
 
