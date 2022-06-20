@@ -17,6 +17,7 @@
 package gowl
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/hamed-yousefi/gowl/status/pool"
@@ -28,7 +29,7 @@ import (
 )
 
 type (
-	pTestFunc   func(pid PID, duration time.Duration) error
+	pTestFunc   func(ctx context.Context, pid PID, duration time.Duration) error
 	mockProcess struct {
 		name      string
 		pid       PID
@@ -37,8 +38,8 @@ type (
 	}
 )
 
-func (t mockProcess) Start() error {
-	return t.pFunc(t.pid, t.sleepTime)
+func (t mockProcess) Start(ctx context.Context) error {
+	return t.pFunc(ctx, t.pid, t.sleepTime)
 }
 
 func (t mockProcess) Name() string {
@@ -57,6 +58,8 @@ func newTestProcess(name string, id int, duration time.Duration, f pTestFunc) Pr
 		pFunc:     f,
 	}
 }
+
+var errCancelled = errors.New("task was cancelled")
 
 // Close pool before adding all processes to the queue
 func TestNewPool(t *testing.T) {
@@ -108,6 +111,25 @@ func TestWorkerPool_Kill(t *testing.T) {
 	a.NoError(err)
 	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
 	a.Equal(process.Killed, wp.Monitor().ProcessStats("p-18").Status)
+}
+
+// Kill a processFunc after it started
+func TestWorkerPoolStarted_Kill(t *testing.T) {
+	a := assert.New(t)
+	wp := NewPool(3)
+	a.Equal(pool.Created, wp.Monitor().PoolStatus())
+	err := wp.Start()
+	a.NoError(err)
+	a.Equal(pool.Running, wp.Monitor().PoolStatus())
+	wp.Register(createProcess(3, 1, 3*time.Second, processFunc)...)
+	time.Sleep(2 * time.Second)
+	wp.Kill("p-12")
+	err = wp.Close()
+	a.NoError(err)
+	a.Equal(pool.Closed, wp.Monitor().PoolStatus())
+	a.Equal(process.Killed, wp.Monitor().ProcessStats("p-12").Status)
+	a.Error(wp.Monitor().Error("p-12"))
+	a.Equal("task was cancelled", wp.Monitor().Error("p-12").Error())
 }
 
 // Process returns error and monitor should cache it
@@ -179,12 +201,17 @@ func createProcess(n int, g int, d time.Duration, f pTestFunc) []Process {
 	return pList
 }
 
-func processFunc(pid PID, d time.Duration) error {
-	time.Sleep(d)
+func processFunc(ctx context.Context, pid PID, d time.Duration) error {
 	fmt.Printf("process with id %v has been started.\n", pid)
+	select {
+	case <-time.After(d):
+	case <-ctx.Done():
+		return errCancelled
+
+	}
 	return nil
 }
 
-func processFuncWithError(pid PID, d time.Duration) error {
+func processFuncWithError(ctx context.Context, pid PID, d time.Duration) error {
 	return errors.New("unable to start processFunc with id: " + pid.String())
 }

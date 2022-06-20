@@ -44,7 +44,7 @@ type (
 	Process interface {
 		// Start runs the process. It returns an error object if any thing wrong
 		// happens in runtime.
-		Start() error
+		Start(ctx context.Context) error
 		// Name returns process name.
 		Name() string
 		// PID returns process id.
@@ -59,7 +59,7 @@ type (
 		Register(p ...Process)
 		// Close stops a running pool.
 		Close() error
-		// Kill cancel a process before it starts.
+		// Kill cancels a process before it starts.
 		Kill(pid PID)
 		// Monitor returns pool monitor.
 		Monitor() Monitor
@@ -75,7 +75,7 @@ type (
 		WorkerList() []WorkerName
 		// WorkerStatus returns worker status. It accepts worker name as input.
 		WorkerStatus(name WorkerName) worker.Status
-		// ProcessStatus returns process stats. It accepts process id as input.
+		// ProcessStats returns process stats. It accepts process id as input.
 		ProcessStats(pid PID) ProcessStats
 	}
 
@@ -183,9 +183,12 @@ func (w *workerPool) run() {
 						stats.Status = process.Killed
 						return
 					default:
-						if err := p.Start(); err != nil { //nolint:typecheck
+						if err := p.Start(pContext.ctx); err != nil { //nolint:typecheck
 							stats.err = err
 							stats.Status = process.Failed
+							if errors.Is(pContext.ctx.Err(), context.Canceled) {
+								stats.Status = process.Killed
+							}
 						} else {
 							stats.Status = process.Succeeded
 						}
@@ -288,7 +291,7 @@ func (w *workerPool) WorkerStatus(name WorkerName) worker.Status {
 	return w.workersStats.get(name)
 }
 
-// ProcessStatus returns process stats. It accepts process id as input.
+// ProcessStats returns process stats. It accepts process id as input.
 func (w *workerPool) ProcessStats(pid PID) ProcessStats {
 	return w.processes.get(pid)
 }
