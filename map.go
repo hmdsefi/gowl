@@ -18,8 +18,9 @@ package gowl
 
 import (
 	"context"
-	"github.com/hamed-yousefi/gowl/status/worker"
 	"sync"
+
+	"github.com/hamed-yousefi/gowl/status/worker"
 )
 
 type (

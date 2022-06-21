@@ -18,10 +18,12 @@ package gowl
 
 import (
 	"context"
-	"github.com/hamed-yousefi/gowl/status/worker"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/hamed-yousefi/gowl/status/worker"
 )
 
 // Test controlPanelMap put and get functions
