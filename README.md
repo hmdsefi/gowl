@@ -46,7 +46,7 @@ the pool. The process interface is as follows:
 
 ```go
 Process interface {
-Start() error
+Start(ctx context.Context) error
 Name() string
 PID() PID
 }
@@ -57,6 +57,8 @@ function to run the process. The Name function returns the process name, and the
 reports. The PID function returns process id. The process id is unique in the entire pool, and it will use by the pool
 and monitor.
 
+If properly done it should respond to the context cancellation (if needed)
+
 Let's take a look at an example:
 
 ```go
@@ -65,7 +67,7 @@ Document struct {
    hash string
 }
 
-func (d *Document) Start() error {
+func (d *Document) Start(ctx context.Context) error {
    hasher := sha1.New()
    hasher.Write(bv)
    h.hash = base64.URLEncoding.EncodeToString(hasher.Sum(nil))
@@ -113,7 +115,8 @@ queue. You can call multiple times when Gowl pool is running.
 #### Kill process
 
 One of the most remarkable features of Gowl is the ability to control the process after registered it into the pool. You
-can kill a process before any worker runs it. Killing a process is simple, and you need the process id to do it.
+can kill a process before any worker runs it, this also works after the job have started if it consideres the context
+cancellation. Killing a process is simple, and you need the process id to do it.
 
 ```go
 pool.Kill(PID("p-909"))
