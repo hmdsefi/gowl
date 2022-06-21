@@ -1,5 +1,5 @@
 /**
- * Copyright © 2019 Hamed Yousefi <hdyousefi@gmail.com.com>.
+ * Copyright © 2019 Hamed Yousefi <hdyousefi@gmail.com>.
  *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
@@ -20,12 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/hamed-yousefi/gowl/status/pool"
-	"github.com/hamed-yousefi/gowl/status/process"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/hamed-yousefi/gowl/status/pool"
+	"github.com/hamed-yousefi/gowl/status/process"
 )
 
 type (
@@ -207,7 +209,6 @@ func processFunc(ctx context.Context, pid PID, d time.Duration) error {
 	case <-time.After(d):
 	case <-ctx.Done():
 		return errCancelled
-
 	}
 	return nil
 }

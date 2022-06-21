@@ -1,5 +1,5 @@
 /**
- * Copyright © 2019 Hamed Yousefi <hdyousefi@gmail.com.com>.
+ * Copyright © 2019 Hamed Yousefi <hdyousefi@gmail.com>.
  *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
@@ -20,12 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/hamed-yousefi/gowl/status/pool"
-	"github.com/hamed-yousefi/gowl/status/process"
-	"github.com/hamed-yousefi/gowl/status/worker"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/hamed-yousefi/gowl/status/pool"
+	"github.com/hamed-yousefi/gowl/status/process"
+	"github.com/hamed-yousefi/gowl/status/worker"
 )
 
 const (
@@ -134,7 +135,6 @@ func NewPool(size int) Pool {
 // It changes the pool state to Running and calls workerPool.run() function to
 // run the pool.
 func (w *workerPool) Start() error {
-
 	if w.status == pool.Running {
 		return errors.New("unable to start the pool, status: " + w.status.String())
 	}
@@ -147,7 +147,6 @@ func (w *workerPool) Start() error {
 
 // run is the function that creates worker and starts the pool.
 func (w *workerPool) run() {
-
 	// Create workers
 	for i := 0; i < w.size; i++ {
 		// For each worker add one to the waitGroup.

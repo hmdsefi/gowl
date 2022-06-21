@@ -1,5 +1,5 @@
 /**
- * Copyright © 2019 Hamed Yousefi <hdyousefi@gmail.com.com>.
+ * Copyright © 2019 Hamed Yousefi <hdyousefi@gmail.com>.
  *
  * Use of this source code is governed by an MIT-style
  * license that can be found in the LICENSE file.
@@ -18,10 +18,12 @@ package gowl
 
 import (
 	"context"
-	"github.com/hamed-yousefi/gowl/status/worker"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/hamed-yousefi/gowl/status/worker"
 )
 
 // Test controlPanelMap put and get functions
