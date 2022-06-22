@@ -1,17 +1,5 @@
 /**
  * Copyright © 2019 Hamed Yousefi <hdyousefi@gmail.com>.
- *
- * Use of this source code is governed by an MIT-style
- * license that can be found in the LICENSE file.
- *
- * Created by IntelliJ IDEA.
- * User: Hamed Yousefi
- * Email: hdyousefi@gmail.com
- * Date: 4/12/21
- * Time: 12:45 PM
- *
- * Description:
- *
  */
 
 package gowl
