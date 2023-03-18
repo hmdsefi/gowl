@@ -1,6 +1,6 @@
 # Gowl
 
-[![Build Status](https://travis-ci.com/hamed-yousefi/gowl.svg?branch=master)](https://travis-ci.com/hamed-yousefi/gowl)
+![build](https://github.com/hmdsefi/gowl/actions/workflows/build.yml/badge.svg)
 [![codecov](https://codecov.io/gh/hmdsefi/gowl/branch/master/graph/badge.svg?token=1TYYX8IBR0)](https://codecov.io/gh/hmdsefi/gowl)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hamed-yousefi/gowl)](https://goreportcard.com/report/github.com/hamed-yousefi/gowl)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B24403%2Fgithub.com%2Fhamed-yousefi%2Fgowl.svg?type=shield)](https://app.fossa.com/projects/custom%2B24403%2Fgithub.com%2Fhamed-yousefi%2Fgowl?ref=badge_shield)
